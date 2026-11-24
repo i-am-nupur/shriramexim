@@ -49,7 +49,7 @@ export default function MakhanaSection() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-start mb-16">
           <div className="relative aspect-[4/3] w-full overflow-hidden rounded-2xl bg-slate-200">
             <Image
-              src="/makhana.jpeg" // Replace with actual Makhana image
+              src="/makhana-blog.jpg" // Replace with actual Makhana image
               alt="Premium Indian Makhana (Fox Nuts)"
               fill
               className="object-cover"

@@ -2,25 +2,48 @@
 
 import { useState, type FormEvent } from "react";
 
-type Status = "idle" | "success" | "error";
+type Status = "idle" | "loading" | "success" | "error";
+
+const SCRIPT_URL =
+  "https://script.google.com/macros/s/AKfycbxmyEenutyxGRVOPyVu-mNxQzY3LhFqOEGx-pVsUB3M-LiO8-p56e8qOJ4tLBBpS-mTYA/exec";
 
 export default function NewsletterForm() {
   const [email, setEmail] = useState("");
   const [status, setStatus] = useState<Status>("idle");
+  const [errorMsg, setErrorMsg] = useState("");
 
-  function handleSubmit(event: FormEvent<HTMLFormElement>) {
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
-    const valid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
+    const trimmedEmail = email.trim();
+    const valid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmedEmail);
     if (!valid) {
       setStatus("error");
+      setErrorMsg("Enter a valid email address, for example name@company.com.");
       return;
     }
 
-    // TODO: send `email` to your mailing list (Mailchimp, Brevo, Resend, etc.)
-    // via a route handler such as app/api/subscribe/route.ts.
-    setStatus("success");
-    setEmail("");
+    setStatus("loading");
+
+    try {
+      const response = await fetch(SCRIPT_URL, {
+        method: "POST",
+        headers: { "Content-Type": "text/plain;charset=utf-8" },
+        body: JSON.stringify({ formType: "newsletter", email: trimmedEmail }),
+      });
+
+      const result = await response.json();
+
+      if (result.status === "success") {
+        setStatus("success");
+        setEmail("");
+      } else {
+        throw new Error();
+      }
+    } catch {
+      setStatus("error");
+      setErrorMsg("Could not subscribe right now. Please try again.");
+    }
   }
 
   return (
@@ -47,9 +70,10 @@ export default function NewsletterForm() {
         />
         <button
           type="submit"
-          className="h-14 shrink-0 rounded-full bg-[#bc8521] px-8 text-base font-semibold text-white shadow-sm transition-all duration-300 hover:bg-[#D9573B] hover:shadow-lg focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-white"
+          disabled={status === "loading"}
+          className="h-14 shrink-0 rounded-full bg-[#bc8521] px-8 text-base font-semibold text-white shadow-sm transition-all duration-300 hover:bg-[#D9573B] hover:shadow-lg disabled:opacity-60 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-white"
         >
-          Subscribe
+          {status === "loading" ? "Subscribing..." : "Subscribe"}
         </button>
       </div>
 
@@ -63,7 +87,7 @@ export default function NewsletterForm() {
       >
         {status === "success" &&
           "Thank you. You’re on the list for market updates and price alerts."}
-        {status === "error" && "Enter a valid email address, for example name@company.com."}
+        {status === "error" && errorMsg}
       </p>
       <p className="mt-1 text-sm text-white/60">
         One email a month. Unsubscribe at any time.
